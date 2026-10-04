@@ -1,0 +1,115 @@
+{% extends "base.html" %}
+
+{% block title %}Attendance Records & Logs - AegisVision{% endblock %}
+
+{% block content %}
+<div class="glass-card p-4">
+    <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-3 border-bottom border-secondary pb-3">
+        <div>
+            <h4 class="fw-bold mb-1"><i class="fa-solid fa-clipboard-check text-info me-2"></i>Attendance Records & Verification Logs</h4>
+            <p class="text-muted small mb-0">Complete audit trail of biometrically verified attendance entries with anti-proxy validation.</p>
+        </div>
+        <div class="d-flex gap-2">
+            <a href="/api/export_csv" class="btn btn-outline-success btn-sm rounded-pill px-3">
+                <i class="fa-solid fa-file-csv me-1"></i> Export Master CSV
+            </a>
+            <a href="/" class="btn btn-primary-custom btn-sm rounded-pill px-3">
+                <i class="fa-solid fa-camera me-1"></i> Open Live Scanner
+            </a>
+        </div>
+    </div>
+
+    <!-- Filter Bar -->
+    <form method="GET" action="/attendance" class="row g-3 mb-4 bg-dark p-3 rounded-3 border border-secondary">
+        <div class="col-12 col-md-3">
+            <label class="form-label text-muted small fw-semibold">FILTER BY DATE</label>
+            <input type="date" class="form-control form-control-sm" name="date" value="{{ selected_date or '' }}">
+        </div>
+        <div class="col-12 col-md-3">
+            <label class="form-label text-muted small fw-semibold">DEPARTMENT</label>
+            <select class="form-select form-select-sm" name="department">
+                <option value="All" {% if not selected_dept or selected_dept == 'All' %}selected{% endif %}>All Departments</option>
+                <option value="Computer Science" {% if selected_dept == 'Computer Science' %}selected{% endif %}>Computer Science</option>
+                <option value="Cyber Security" {% if selected_dept == 'Cyber Security' %}selected{% endif %}>Cyber Security</option>
+                <option value="Artificial Intelligence" {% if selected_dept == 'Artificial Intelligence' %}selected{% endif %}>Artificial Intelligence</option>
+                <option value="Information Tech" {% if selected_dept == 'Information Tech' %}selected{% endif %}>Information Tech</option>
+                <option value="Electronics" {% if selected_dept == 'Electronics' %}selected{% endif %}>Electronics</option>
+            </select>
+        </div>
+        <div class="col-12 col-md-4">
+            <label class="form-label text-muted small fw-semibold">SEARCH STUDENT</label>
+            <div class="input-group input-group-sm">
+                <input type="text" class="form-control" name="search" placeholder="Search by Student ID or Name..." value="{{ search_query or '' }}">
+                <button class="btn btn-info" type="submit"><i class="fa-solid fa-magnifying-glass"></i></button>
+            </div>
+        </div>
+        <div class="col-12 col-md-2 d-flex align-items-end">
+            <a href="/attendance" class="btn btn-outline-secondary btn-sm w-100">Reset Filters</a>
+        </div>
+    </form>
+
+    <!-- Table -->
+    <div class="table-responsive">
+        <table class="table table-custom table-hover align-middle">
+            <thead>
+                <tr>
+                    <th># ID</th>
+                    <th>STUDENT ID</th>
+                    <th>STUDENT NAME</th>
+                    <th>DEPARTMENT</th>
+                    <th>DATE</th>
+                    <th>TIME</th>
+                    <th>STATUS</th>
+                    <th>CONFIDENCE</th>
+                    <th>LIVENESS SCORE</th>
+                    <th>ANTI-PROXY</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% if logs %}
+                    {% for r in logs %}
+                        <tr>
+                            <td class="text-muted font-monospace">{{ r.id }}</td>
+                            <td><span class="badge bg-secondary font-monospace">{{ r.student_id }}</span></td>
+                            <td class="fw-semibold text-light">{{ r.name }}</td>
+                            <td class="text-muted">{{ r.department }}</td>
+                            <td class="font-monospace text-muted">{{ r.date_str }}</td>
+                            <td class="font-monospace text-info">{{ r.time_str }}</td>
+                            <td>
+                                <span class="badge {% if r.status == 'Present' %}badge-present{% else %}badge-late{% endif %}">
+                                    {{ r.status }}
+                                </span>
+                            </td>
+                            <td>
+                                <div class="d-flex align-items-center gap-2">
+                                    <span class="small font-monospace">{{ r.confidence }}%</span>
+                                    <div class="progress flex-grow-1 bg-dark" style="height: 6px; width: 60px;">
+                                        <div class="progress-bar bg-info" style="width: {{ r.confidence }}%;"></div>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>
+                                <span class="badge badge-live font-monospace">
+                                    <i class="fa-solid fa-shield-check me-1"></i> {{ r.spoof_score }} / 100
+                                </span>
+                            </td>
+                            <td>
+                                <span class="badge bg-dark border border-success text-success small">
+                                    <i class="fa-solid fa-circle-check me-1"></i> VERIFIED LIVE
+                                </span>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                {% else %}
+                    <tr>
+                        <td colspan="10" class="text-center py-5 text-muted">
+                            <i class="fa-solid fa-folder-open fa-2x mb-3 text-secondary"></i>
+                            <p class="mb-0">No attendance logs found for the selected criteria.</p>
+                        </td>
+                    </tr>
+                {% endif %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

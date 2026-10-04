@@ -1,0 +1,223 @@
+{% extends "base.html" %}
+
+{% block title %}Live Attendance Scanner & Anti-Spoof HUD - AegisVision{% endblock %}
+
+{% block content %}
+<!-- Metrics Row -->
+<div class="row g-3 mb-4">
+    <div class="col-12 col-sm-6 col-xl-3">
+        <div class="glass-card p-3 d-flex align-items-center justify-content-between">
+            <div>
+                <span class="text-muted small fw-semibold">TOTAL REGISTERED</span>
+                <h3 class="fw-bold mb-0 mt-1" id="stat-total-students">{{ stats.total_students }}</h3>
+            </div>
+            <div class="stat-icon icon-blue">
+                <i class="fa-solid fa-users"></i>
+            </div>
+        </div>
+    </div>
+    <div class="col-12 col-sm-6 col-xl-3">
+        <div class="glass-card p-3 d-flex align-items-center justify-content-between">
+            <div>
+                <span class="text-muted small fw-semibold">TODAY PRESENT</span>
+                <h3 class="fw-bold text-success mb-0 mt-1" id="stat-today-present">{{ stats.today_present }}</h3>
+            </div>
+            <div class="stat-icon icon-green">
+                <i class="fa-solid fa-user-check"></i>
+            </div>
+        </div>
+    </div>
+    <div class="col-12 col-sm-6 col-xl-3">
+        <div class="glass-card p-3 d-flex align-items-center justify-content-between">
+            <div>
+                <span class="text-muted small fw-semibold">ATTENDANCE RATE</span>
+                <h3 class="fw-bold text-info mb-0 mt-1" id="stat-attendance-rate">{{ stats.attendance_rate }}%</h3>
+            </div>
+            <div class="stat-icon icon-amber">
+                <i class="fa-solid fa-chart-line"></i>
+            </div>
+        </div>
+    </div>
+    <div class="col-12 col-sm-6 col-xl-3">
+        <div class="glass-card p-3 d-flex align-items-center justify-content-between">
+            <div>
+                <span class="text-muted small fw-semibold">SPOOFS BLOCKED TODAY</span>
+                <h3 class="fw-bold text-danger mb-0 mt-1" id="stat-spoofs-blocked">{{ stats.today_spoofs_blocked }}</h3>
+            </div>
+            <div class="stat-icon icon-red">
+                <i class="fa-solid fa-shield-virus"></i>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Main Scanner Section -->
+<div class="row g-4">
+    <!-- Camera Feed Column -->
+    <div class="col-12 col-lg-8">
+        <div class="glass-card p-3">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <div class="d-flex align-items-center gap-2">
+                    <h5 class="mb-0 fw-bold"><i class="fa-solid fa-video text-info me-2"></i>Live Anti-Spoof Camera Feed</h5>
+                    <span class="badge bg-success bg-opacity-25 text-success border border-success px-2 py-1 small">
+                        <i class="fa-solid fa-circle-dot me-1"></i> ACTIVE
+                    </span>
+                </div>
+                <div class="d-flex gap-2">
+                    <button class="btn btn-sm btn-outline-light" onclick="toggleStream(this)">
+                        <i class="fa-solid fa-pause me-1"></i> Pause Feed
+                    </button>
+                    <a href="/register" class="btn btn-sm btn-primary-custom">
+                        <i class="fa-solid fa-plus me-1"></i> Enroll Student
+                    </a>
+                </div>
+            </div>
+
+            <!-- Video Frame Container -->
+            <div class="video-container position-relative">
+                <div class="live-badge">
+                    <span class="live-dot"></span>
+                    <span>AI LIVENESS DEFENSE ON</span>
+                </div>
+                <img id="camera-stream" src="{{ url_for('video_feed') }}" alt="Camera Stream" onerror="handleStreamError(this)">
+            </div>
+
+            <!-- Security Diagnostics Bar -->
+            <div class="mt-3 p-3 bg-dark rounded-3 border border-secondary">
+                <div class="row text-center g-2 small">
+                    <div class="col-6 col-md-3">
+                        <span class="text-muted d-block">Liveness Algorithm</span>
+                        <strong class="text-info">Multi-Modal (FFT + EAR)</strong>
+                    </div>
+                    <div class="col-6 col-md-3">
+                        <span class="text-muted d-block">Face Detector</span>
+                        <strong class="text-light">OpenCV YuNet DNN (5-pts)</strong>
+                    </div>
+                    <div class="col-6 col-md-3">
+                        <span class="text-muted d-block">Classifier</span>
+                        <strong class="text-light">Spatial LBP + Cosine KNN</strong>
+                    </div>
+                    <div class="col-6 col-md-3">
+                        <span class="text-muted d-block">Anti-Proxy Cooldown</span>
+                        <strong class="text-warning">Daily Once / 5m Window</strong>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Live Attendance Ticker Sidebar -->
+    <div class="col-12 col-lg-4">
+        <div class="glass-card p-3 h-100 d-flex flex-column">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h5 class="mb-0 fw-bold"><i class="fa-solid fa-bolt text-warning me-2"></i>Live Attendance Ticker</h5>
+                <span class="badge bg-dark border border-secondary text-info" id="live-count">{{ today_logs|length }} Verified</span>
+            </div>
+
+            <p class="text-muted small mb-3">Real-time biometric verifications automatically logged below as students appear before the camera.</p>
+
+            <div class="ticker-list flex-grow-1" id="attendance-ticker">
+                {% if today_logs %}
+                    {% for log in today_logs %}
+                        <div class="ticker-item">
+                            <div>
+                                <h6 class="mb-1 text-light fw-bold">{{ log.name }}</h6>
+                                <div class="small text-muted">
+                                    <span class="badge bg-secondary me-1">{{ log.student_id }}</span>
+                                    <span>{{ log.department }}</span>
+                                </div>
+                            </div>
+                            <div class="text-end">
+                                <span class="badge {% if log.status == 'Present' %}badge-present{% else %}badge-late{% endif %} mb-1 d-inline-block">
+                                    {{ log.status }}
+                                </span>
+                                <div class="small font-monospace text-muted">{{ log.time_str }}</div>
+                            </div>
+                        </div>
+                    {% endfor %}
+                {% else %}
+                    <div class="text-center py-5 text-muted" id="no-attendance-placeholder">
+                        <i class="fa-solid fa-user-clock fa-2x mb-3 text-secondary"></i>
+                        <p class="mb-0">Waiting for students to scan in...</p>
+                    </div>
+                {% endif %}
+            </div>
+
+            <div class="mt-3 pt-3 border-top border-secondary text-center">
+                <a href="/attendance" class="btn btn-outline-info btn-sm w-100 rounded-pill">
+                    <i class="fa-solid fa-table me-1"></i> View Full Attendance Table
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+    let streamPaused = false;
+    const streamImg = document.getElementById('camera-stream');
+
+    function toggleStream(btn) {
+        streamPaused = !streamPaused;
+        if (streamPaused) {
+            streamImg.src = "";
+            btn.innerHTML = '<i class="fa-solid fa-play me-1"></i> Resume Feed';
+            btn.classList.replace('btn-outline-light', 'btn-info');
+        } else {
+            streamImg.src = "{{ url_for('video_feed') }}";
+            btn.innerHTML = '<i class="fa-solid fa-pause me-1"></i> Pause Feed';
+            btn.classList.replace('btn-info', 'btn-outline-light');
+        }
+    }
+
+    function handleStreamError(img) {
+        img.alt = "Camera unavailable or streaming paused";
+    }
+
+    // Auto-refresh today's attendance logs ticker every 3 seconds
+    function pollLiveUpdates() {
+        fetch('/api/live_status')
+            .then(res => res.json())
+            .then(data => {
+                if (data.stats) {
+                    document.getElementById('stat-total-students').innerText = data.stats.total_students;
+                    document.getElementById('stat-today-present').innerText = data.stats.today_present;
+                    document.getElementById('stat-attendance-rate').innerText = data.stats.attendance_rate + '%';
+                    document.getElementById('stat-spoofs-blocked').innerText = data.stats.today_spoofs_blocked;
+                }
+
+                if (data.recent_logs && data.recent_logs.length > 0) {
+                    const placeholder = document.getElementById('no-attendance-placeholder');
+                    if (placeholder) placeholder.style.display = 'none';
+
+                    const ticker = document.getElementById('attendance-ticker');
+                    let html = '';
+                    data.recent_logs.forEach(log => {
+                        const statusClass = log.status === 'Present' ? 'badge-present' : 'badge-late';
+                        html += `
+                            <div class="ticker-item">
+                                <div>
+                                    <h6 class="mb-1 text-light fw-bold">${log.name}</h6>
+                                    <div class="small text-muted">
+                                        <span class="badge bg-secondary me-1">${log.student_id}</span>
+                                        <span>${log.department}</span>
+                                    </div>
+                                </div>
+                                <div class="text-end">
+                                    <span class="badge ${statusClass} mb-1 d-inline-block">${log.status}</span>
+                                    <div class="small font-monospace text-muted">${log.time_str}</div>
+                                </div>
+                            </div>
+                        `;
+                    });
+                    ticker.innerHTML = html;
+                    document.getElementById('live-count').innerText = `${data.recent_logs.length} Verified`;
+                }
+            })
+            .catch(err => console.log('Polling err:', err));
+    }
+
+    setInterval(pollLiveUpdates, 3000);
+</script>
+{% endblock %}

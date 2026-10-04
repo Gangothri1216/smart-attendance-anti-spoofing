@@ -1,0 +1,129 @@
+{% extends "base.html" %}
+
+{% block title %}Cybersecurity & Spoof Attack Logs - AegisVision{% endblock %}
+
+{% block content %}
+<div class="glass-card p-4">
+    <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-3 border-bottom border-secondary pb-3">
+        <div>
+            <div class="d-flex align-items-center gap-2">
+                <h4 class="fw-bold mb-0"><i class="fa-solid fa-shield-virus text-danger me-2"></i>Biometric Security & Spoof Incident Logs</h4>
+                <span class="badge bg-danger bg-opacity-25 text-danger border border-danger">Threat Defense Log</span>
+            </div>
+            <p class="text-muted small mb-0 mt-1">Audit of unauthorized presentation attacks (printed photos, phone screen replays, and static images) intercepted and blocked in real time.</p>
+        </div>
+        <span class="badge bg-dark border border-danger text-danger px-3 py-2 fs-6">
+            <i class="fa-solid fa-triangle-exclamation me-1"></i> {{ incidents|length }} Attacks Intercepted
+        </span>
+    </div>
+
+    <!-- Security Information Cards -->
+    <div class="row g-3 mb-4">
+        <div class="col-12 col-md-4">
+            <div class="bg-dark p-3 rounded-3 border border-secondary">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="stat-icon icon-red">
+                        <i class="fa-solid fa-mobile-screen"></i>
+                    </div>
+                    <div>
+                        <h6 class="mb-0 text-light fw-bold">Screen Replay Defense</h6>
+                        <small class="text-muted">Detected via 2D-FFT Moiré & Blue backlight ratio</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-12 col-md-4">
+            <div class="bg-dark p-3 rounded-3 border border-secondary">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="stat-icon icon-amber">
+                        <i class="fa-solid fa-image"></i>
+                    </div>
+                    <div>
+                        <h6 class="mb-0 text-light fw-bold">Printed Photo Defense</h6>
+                        <small class="text-muted">Detected via Laplacian blur & 0 Eye-Blink rate</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-12 col-md-4">
+            <div class="bg-dark p-3 rounded-3 border border-secondary">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="stat-icon icon-blue">
+                        <i class="fa-solid fa-id-badge"></i>
+                    </div>
+                    <div>
+                        <h6 class="mb-0 text-light fw-bold">Proxy Attendance Block</h6>
+                        <small class="text-muted">Zero-tolerance biometric verification before logging</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Incidents Table -->
+    <div class="table-responsive">
+        <table class="table table-custom table-hover align-middle">
+            <thead>
+                <tr>
+                    <th># INCIDENT</th>
+                    <th>DATE & TIME</th>
+                    <th>CLASSIFIED ATTACK TYPE</th>
+                    <th>LIVENESS SCORE</th>
+                    <th>DEFENSE TRIGGER</th>
+                    <th>STATUS</th>
+                    <th>SNAPSHOT</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% if incidents %}
+                    {% for inc in incidents %}
+                        <tr>
+                            <td class="text-muted font-monospace">#SEC-{{ inc.id }}</td>
+                            <td>
+                                <div class="fw-semibold text-light">{{ inc.date_str }}</div>
+                                <div class="small font-monospace text-muted">{{ inc.time_str }}</div>
+                            </td>
+                            <td>
+                                <span class="badge badge-spoof">
+                                    <i class="fa-solid fa-triangle-exclamation me-1"></i> {{ inc.attack_type }}
+                                </span>
+                            </td>
+                            <td>
+                                <span class="font-monospace text-danger fw-bold">
+                                    {{ inc.spoof_score }} / 100
+                                </span>
+                                <div class="small text-muted">(Threshold: 65.0)</div>
+                            </td>
+                            <td>
+                                <span class="small text-light">{{ inc.notes or 'Biometric multi-modal check failed' }}</span>
+                            </td>
+                            <td>
+                                <span class="badge bg-dark border border-danger text-danger">
+                                    <i class="fa-solid fa-ban me-1"></i> ACCESS DENIED
+                                </span>
+                            </td>
+                            <td>
+                                {% if inc.snapshot_path %}
+                                    <a href="/static/images/{{ inc.snapshot_path }}" target="_blank" class="btn btn-outline-danger btn-sm">
+                                        <i class="fa-solid fa-image me-1"></i> View Snapshot
+                                    </a>
+                                {% else %}
+                                    <span class="text-muted small">N/A</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                    {% endfor %}
+                {% else %}
+                    <tr>
+                        <td colspan="7" class="text-center py-5 text-muted">
+                            <i class="fa-solid fa-shield-halved fa-2x mb-3 text-success"></i>
+                            <p class="mb-0 text-success fw-semibold">No spoof attacks or unauthorized proxy attempts recorded yet.</p>
+                            <small class="text-muted">All incoming biometric presentations have passed authentic liveness checks.</small>
+                        </td>
+                    </tr>
+                {% endif %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

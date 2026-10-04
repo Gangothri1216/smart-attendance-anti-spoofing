@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Smart Attendance System with Anti-Spoofing{% endblock %}</title>
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- FontAwesome 6 -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    {% block extra_head %}{% endblock %}
+</head>
+<body>
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg navbar-custom sticky-top">
+        <div class="container-fluid px-4">
+            <a class="navbar-brand d-flex align-items-center gap-2" href="/">
+                <i class="fa-solid fa-shield-halved fa-xl text-info"></i>
+                <span class="brand-badge fs-5">AegisVision</span>
+                <span class="badge bg-secondary text-light ms-1" style="font-size: 0.7rem;">Anti-Spoof AI</span>
+            </a>
+            <button class="navbar-toggler text-light" type="button" data-bs-toggle="collapse" data-bs-target="#navbarContent">
+                <i class="fa-solid fa-bars"></i>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarContent">
+                <ul class="navbar-nav me-auto mb-2 mb-lg-0 ms-lg-4 gap-1">
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.path == '/' %}active{% endif %}" href="/">
+                            <i class="fa-solid fa-camera me-1"></i> Live Scanner
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.path == '/register' %}active{% endif %}" href="/register">
+                            <i class="fa-solid fa-user-plus me-1"></i> Register Student
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.path == '/attendance' %}active{% endif %}" href="/attendance">
+                            <i class="fa-solid fa-clipboard-check me-1"></i> Attendance Logs
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.path == '/security' %}active{% endif %}" href="/security">
+                            <i class="fa-solid fa-shield-virus me-1 text-danger"></i> Security & Spoof Logs
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.path == '/analytics' %}active{% endif %}" href="/analytics">
+                            <i class="fa-solid fa-chart-pie me-1"></i> Analytics
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.path == '/students' %}active{% endif %}" href="/students">
+                            <i class="fa-solid fa-users me-1"></i> Directory
+                        </a>
+                    </li>
+                </ul>
+                <div class="d-flex align-items-center gap-3">
+                    <button class="btn btn-outline-info btn-sm rounded-pill px-3" onclick="retrainModel()">
+                        <i class="fa-solid fa-rotate me-1"></i> Re-train Model
+                    </button>
+                    <span class="badge bg-dark border border-secondary text-muted px-3 py-2">
+                        <i class="fa-regular fa-clock me-1 text-info"></i>
+                        <span id="current-time">--:--:--</span>
+                    </span>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Toast Notification Container -->
+    <div class="toast-container position-fixed bottom-0 end-0 p-3" style="z-index: 1080;">
+        <div id="liveToast" class="toast align-items-center text-white bg-dark border-0 shadow-lg" role="alert" aria-live="assertive" aria-atomic="true">
+            <div class="d-flex">
+                <div class="toast-body" id="toastMessage">
+                    Action executed successfully.
+                </div>
+                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content Container -->
+    <main class="container-fluid px-4 py-4">
+        {% block content %}{% endblock %}
+    </main>
+
+    <!-- Footer -->
+    <footer class="container-fluid px-4 py-3 mt-5 border-top border-secondary text-center text-muted small">
+        <p class="mb-0">
+            Smart Attendance System using Anti-Spoofing &bull; Major Project Deliverable &bull; Python 3, OpenCV YuNet & Scikit-Learn &bull; Cybersecurity & Biometric Defense
+        </p>
+    </footer>
+
+    <!-- Bootstrap 5 JS Bundle -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Real-time Clock
+        function updateClock() {
+            const now = new Date();
+            const timeStr = now.toLocaleTimeString();
+            const elem = document.getElementById('current-time');
+            if (elem) elem.innerText = timeStr;
+        }
+        setInterval(updateClock, 1000);
+        updateClock();
+
+        // Toast helper
+        function showToast(message, isError = false) {
+            const toastEl = document.getElementById('liveToast');
+            const toastBody = document.getElementById('toastMessage');
+            if (toastEl && toastBody) {
+                toastBody.innerHTML = message;
+                toastEl.className = isError 
+                    ? "toast align-items-center text-white bg-danger border-0 shadow-lg" 
+                    : "toast align-items-center text-white bg-success border-0 shadow-lg";
+                const toast = new bootstrap.Toast(toastEl);
+                toast.show();
+            }
+        }
+
+        // Global Retrain trigger
+        function retrainModel() {
+            showToast("Training face recognition model in background...", false);
+            fetch('/api/train', { method: 'POST' })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.success) {
+                        showToast("<i class='fa-solid fa-check me-1'></i> " + data.message, false);
+                    } else {
+                        showToast("<i class='fa-solid fa-triangle-exclamation me-1'></i> " + data.message, true);
+                    }
+                })
+                .catch(err => {
+                    showToast("Error retraining model: " + err, true);
+                });
+        }
+    </script>
+    {% block extra_scripts %}{% endblock %}
+</body>
+</html>

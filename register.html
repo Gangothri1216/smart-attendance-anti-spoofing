@@ -1,0 +1,232 @@
+{% extends "base.html" %}
+
+{% block title %}Enroll New Student - AegisVision{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-12 col-xl-10">
+        <div class="glass-card p-4">
+            <div class="d-flex justify-content-between align-items-center mb-4 border-bottom border-secondary pb-3">
+                <div>
+                    <h4 class="fw-bold mb-1"><i class="fa-solid fa-user-plus text-info me-2"></i>Student Biometric Enrollment</h4>
+                    <p class="text-muted small mb-0">Register a student and capture multi-angle training face images for the Anti-Spoof recognition model.</p>
+                </div>
+                <a href="/" class="btn btn-outline-secondary btn-sm rounded-pill">
+                    <i class="fa-solid fa-arrow-left me-1"></i> Back to Scanner
+                </a>
+            </div>
+
+            <div class="row g-4">
+                <!-- Registration Form -->
+                <div class="col-12 col-md-6">
+                    <form id="enrollmentForm">
+                        <div class="mb-3">
+                            <label class="form-label text-info small fw-bold">STUDENT ID (UNIQUE) *</label>
+                            <div class="input-group">
+                                <span class="input-group-text"><i class="fa-solid fa-id-card"></i></span>
+                                <input type="text" class="form-control" id="student_id" name="student_id" placeholder="e.g. CS-2026-001" required>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label text-info small fw-bold">FULL NAME *</label>
+                            <div class="input-group">
+                                <span class="input-group-text"><i class="fa-solid fa-user"></i></span>
+                                <input type="text" class="form-control" id="name" name="name" placeholder="e.g. Alex Harrison" required>
+                            </div>
+                        </div>
+
+                        <div class="row g-2 mb-3">
+                            <div class="col-6">
+                                <label class="form-label text-info small fw-bold">ROLL NUMBER *</label>
+                                <input type="text" class="form-control" id="roll_no" name="roll_no" placeholder="e.g. 21CS042" required>
+                            </div>
+                            <div class="col-6">
+                                <label class="form-label text-info small fw-bold">DEPARTMENT *</label>
+                                <select class="form-select" id="department" name="department" required>
+                                    <option value="Computer Science">Computer Science</option>
+                                    <option value="Cyber Security">Cyber Security</option>
+                                    <option value="Artificial Intelligence">Artificial Intelligence</option>
+                                    <option value="Information Tech">Information Tech</option>
+                                    <option value="Electronics">Electronics</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label text-info small fw-bold">EMAIL ADDRESS</label>
+                            <div class="input-group">
+                                <span class="input-group-text"><i class="fa-solid fa-envelope"></i></span>
+                                <input type="email" class="form-control" id="email" name="email" placeholder="student@college.edu">
+                            </div>
+                        </div>
+
+                        <div class="mb-4">
+                            <label class="form-label text-info small fw-bold">PHONE NUMBER</label>
+                            <div class="input-group">
+                                <span class="input-group-text"><i class="fa-solid fa-phone"></i></span>
+                                <input type="tel" class="form-control" id="phone" name="phone" placeholder="+1 (555) 019-2834">
+                            </div>
+                        </div>
+
+                        <!-- Progress & Action -->
+                        <div class="mb-3">
+                            <label class="text-muted small fw-semibold d-flex justify-content-between">
+                                <span>DATASET SAMPLES CAPTURED</span>
+                                <span id="sample-count-text" class="text-info fw-bold">0 / 30</span>
+                            </label>
+                            <div class="progress bg-dark border border-secondary" style="height: 10px;">
+                                <div id="capture-progress" class="progress-bar bg-info progress-bar-striped progress-bar-animated" role="progressbar" style="width: 0%;"></div>
+                            </div>
+                        </div>
+
+                        <div class="d-grid gap-2">
+                            <button type="button" id="startCaptureBtn" class="btn btn-primary-custom" onclick="startBiometricCapture()">
+                                <i class="fa-solid fa-camera me-2"></i> Start Automated 30-Shot Face Capture
+                            </button>
+                            <button type="button" id="manualSampleBtn" class="btn btn-outline-info btn-sm" onclick="captureSingleSample()" style="display: none;">
+                                <i class="fa-solid fa-camera-retro me-1"></i> Capture Single Frame
+                            </button>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- Live Camera Capture Preview Column -->
+                <div class="col-12 col-md-6">
+                    <div class="glass-card p-3 h-100 d-flex flex-column justify-content-between">
+                        <div>
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <span class="fw-semibold text-light small"><i class="fa-solid fa-crosshairs text-warning me-1"></i> Facial Alignment Stream</span>
+                                <span id="status-indicator" class="badge bg-secondary">Awaiting Form</span>
+                            </div>
+
+                            <div class="video-container mb-3 position-relative" style="aspect-ratio: 4/3;">
+                                <img id="reg-camera-stream" src="{{ url_for('video_feed') }}" alt="Registration Camera">
+                            </div>
+                        </div>
+
+                        <!-- Instructions Guide -->
+                        <div class="bg-dark p-3 rounded-3 border border-secondary small">
+                            <h6 class="fw-bold text-info mb-2"><i class="fa-solid fa-lightbulb me-1"></i> Enrollment Best Practices:</h6>
+                            <ul class="mb-0 text-muted ps-3">
+                                <li>Ensure face is centered inside the camera bounding box.</li>
+                                <li>During automated capture, slowly tilt face slightly left, right, and nod.</li>
+                                <li>Ensure consistent illumination without harsh direct backlights.</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+    let captureInterval = null;
+    let samplesCaptured = 0;
+    const targetSamples = 30;
+
+    function validateForm() {
+        const studentId = document.getElementById('student_id').value.trim();
+        const name = document.getElementById('name').value.trim();
+        const rollNo = document.getElementById('roll_no').value.trim();
+        const department = document.getElementById('department').value.trim();
+
+        if (!studentId || !name || !rollNo || !department) {
+            showToast("Please fill in Student ID, Name, Roll No, and Department.", true);
+            return false;
+        }
+        return true;
+    }
+
+    function startBiometricCapture() {
+        if (!validateForm()) return;
+
+        const studentId = document.getElementById('student_id').value.trim();
+        const name = document.getElementById('name').value.trim();
+        const rollNo = document.getElementById('roll_no').value.trim();
+        const department = document.getElementById('department').value.trim();
+        const email = document.getElementById('email').value.trim();
+        const phone = document.getElementById('phone').value.trim();
+
+        // Register student in DB first
+        const payload = {
+            student_id: studentId,
+            name: name,
+            roll_no: rollNo,
+            department: department,
+            email: email,
+            phone: phone
+        };
+
+        const btn = document.getElementById('startCaptureBtn');
+        btn.disabled = true;
+        btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status"></span> Capturing multi-angle biometric samples...';
+
+        document.getElementById('status-indicator').className = 'badge bg-warning text-dark';
+        document.getElementById('status-indicator').innerText = 'Capturing Faces...';
+
+        fetch('/api/register_student', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (!data.success) {
+                showToast(data.message, true);
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fa-solid fa-camera me-2"></i> Start Automated 30-Shot Face Capture';
+                return;
+            }
+
+            // Begin automated frame capture loop
+            samplesCaptured = 0;
+            captureInterval = setInterval(() => {
+                captureFrame(studentId);
+            }, 120); // 120ms between captures for varied angles
+        })
+        .catch(err => {
+            showToast("Registration error: " + err, true);
+            btn.disabled = false;
+        });
+    }
+
+    function captureFrame(studentId) {
+        fetch('/api/capture_sample', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ student_id: studentId })
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) {
+                samplesCaptured = data.samples_count;
+                const percent = Math.min(100, Math.round((samplesCaptured / targetSamples) * 100));
+                document.getElementById('capture-progress').style.width = percent + '%';
+                document.getElementById('sample-count-text').innerText = `${samplesCaptured} / ${targetSamples}`;
+
+                if (samplesCaptured >= targetSamples) {
+                    clearInterval(captureInterval);
+                    document.getElementById('status-indicator').className = 'badge bg-success';
+                    document.getElementById('status-indicator').innerText = 'Enrollment Complete!';
+                    showToast("Face samples captured! Now training AI model...", false);
+
+                    // Automatically retrain model
+                    fetch('/api/train', { method: 'POST' })
+                        .then(res => res.json())
+                        .then(trainData => {
+                            showToast("Student successfully enrolled and AI model updated!", false);
+                            setTimeout(() => {
+                                window.location.href = "/";
+                            }, 1500);
+                        });
+                }
+            }
+        })
+        .catch(err => console.log('Capture error:', err));
+    }
+</script>
+{% endblock %}
