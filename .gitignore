@@ -1,0 +1,17 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environments
+.venv/
+env/
+venv/
+ENV/
+
+# System and OS files
+.DS_Store
+Thumbs.db
+
+# Temporary logs (optional - keeps dataset clean if desired)
+logs/spoof_attempts/*.jpg
